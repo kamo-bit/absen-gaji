@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaji Tracker Cloud - Final Version</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #1e293b; -webkit-tap-highlight-color: transparent; }
+        input { border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; width: 100%; outline: none; transition: 0.3s; font-size: 16px; background: #ffffff; }
+        input:focus { border-color: #4f46e5; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
+        .hidden { display: none; }
+        .btn-primary { background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); color: white; font-weight: 800; padding: 16px; border-radius: 18px; width: 100%; transition: 0.3s; box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4); border: none; cursor: pointer; }
+        .btn-primary:active { transform: scale(0.96); }
+        .custom-card { background: #ffffff; border-radius: 32px; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        
+        /* Toggle Switch Styling */
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e2e8f0; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #4f46e5; }
+        input:checked + .slider:before { transform: translateX(20px); }
+    </style>
+</head>
+<body class="pb-24">
+
+    <!-- Screen Loading -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white z-50 flex items-center justify-center transition-opacity duration-500">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-14 w-14 border-t-4 border-indigo-600 border-r-transparent mb-4"></div>
+            <p class="text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em]">Sinkronisasi Data...</p>
+        </div>
+    </div>
+
+    <!-- Screen Login/Register -->
+    <div id="auth-screen" class="max-w-md mx-auto px-8 pt-20 hidden text-center">
+        <div class="mb-12">
+            <h1 class="text-5xl font-black text-slate-900 italic tracking-tighter mb-3">GAJI.LOG</h1>
+            <div class="h-1.5 w-12 bg-indigo-600 mx-auto rounded-full"></div>
+            <p class="text-slate-500 font-medium mt-4">Data kamu aman selamanya di Cloud</p>
+        </div>
+        
+        <div class="bg-white p-8 rounded-[40px] shadow-2xl shadow-slate-200/60 space-y-5 text-left border border-slate-50">
+            <div>
+                <label class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Email</label>
+                <input type="email" id="email" placeholder="nama@email.com">
+            </div>
+            <div>
+                <label class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Password</label>
+                <input type="password" id="password" placeholder="Min. 6 karakter">
+            </div>
+            <div class="grid grid-cols-1 gap-3 pt-4">
+                <button onclick="handleAuth('login')" class="bg-slate-100 text-slate-700 font-bold py-4 rounded-2xl hover:bg-slate-200 transition-all">Masuk</button>
+                <button onclick="handleAuth('register')" class="btn-primary">Daftar Akun</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen Utama Aplikasi -->
+    <div id="main-app" class="max-w-md mx-auto px-5 pt-8 hidden">
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tighter italic leading-none">GAJI.LOG</h1>
+                <p id="user-email-display" class="text-indigo-600 text-[10px] font-black uppercase mt-2 italic"></p>
+            </div>
+            <button onclick="handleLogout()" class="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-slate-300 hover:text-red-500 transition-colors border border-slate-100">
+                <i data-lucide="log-out"></i>
+            </button>
+        </header>
+
+        <!-- Form Input Absen -->
+        <div class="custom-card p-6 mb-8">
+            <div class="flex items-center gap-2 mb-6 text-indigo-600 font-extrabold text-xs uppercase tracking-widest">
+                <i data-lucide="calendar-plus" class="w-4 h-4"></i>
+                <span>Input Shift Kerja</span>
+            </div>
+            <div class="space-y-5">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Tanggal</label>
+                    <input type="date" id="workDate" class="font-bold text-slate-700">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-blue-500 uppercase tracking-widest ml-2 mb-1 block italic">Masuk</label>
+                        <input type="time" id="timeIn" value="09:00">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-rose-500 uppercase tracking-widest ml-2 mb-1 block italic">Pulang</label>
+                        <input type="time" id="timeOut" value="21:00">
+                    </div>
+                </div>
+
+                <!-- Toggle Istirahat -->
+                <div class="flex items-center justify-between px-2 py-1">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="coffee" class="w-4 h-4 text-amber-500"></i>
+                        <span class="text-xs font-bold text-slate-600">Gunakan Waktu Istirahat?</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="useBreak" checked onchange="toggleBreakUI()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div id="break-input-container" class="p-5 bg-amber-50 rounded-3xl border border-amber-100/50 transition-all duration-300">
+                    <p class="text-[10px] font-black uppercase text-amber-600 mb-3 tracking-widest italic text-center">Durasi Istirahat</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="time" id="breakStart" value="15:00" class="border-amber-200">
+                        <input type="time" id="breakEnd" value="18:00" class="border-amber-200">
+                    </div>
+                </div>
+                
+                <button onclick="saveToCloud()" class="btn-primary flex items-center justify-center gap-3 w-full">
+                    <i data-lucide="save"></i> Simpan Permanen
+                </button>
+            </div>
+        </div>
+
+        <!-- Bagian Rekapan -->
+        <div class="flex justify-between items-end mb-4 px-2">
+            <h2 class="font-black text-slate-800 italic uppercase text-sm tracking-tighter">Ringkasan Gaji</h2>
+            <input type="month" id="filterMonth" onchange="loadData()" class="w-auto p-0 border-none bg-transparent font-black text-indigo-600 text-sm">
+        </div>
+
+        <div class="bg-gradient-to-br from-indigo-600 to-indigo-900 rounded-[40px] p-8 text-white mb-10 shadow-2xl relative overflow-hidden">
+            <div class="relative z-10">
+                <div class="flex justify-between mb-8">
+                    <div>
+                        <p class="text-indigo-200 text-[10px] font-bold uppercase tracking-widest mb-1">Hari</p>
+                        <p id="statDays" class="text-4xl font-black italic leading-none">0</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-indigo-200 text-[10px] font-bold uppercase tracking-widest mb-1">Jam Kerja</p>
+                        <p id="statHours" class="text-4xl font-black italic leading-none">0.0</p>
+                    </div>
+                </div>
+                <div class="pt-6 border-t border-white/10">
+                    <p class="text-indigo-200 text-[10px] font-bold uppercase tracking-widest mb-1 text-right italic">Estimasi Pendapatan</p>
+                    <p id="statSalary" class="text-5xl font-black text-yellow-300 text-right drop-shadow-xl tracking-tighter">¥0</p>
+                </div>
+            </div>
+            <i data-lucide="wallet" class="absolute -bottom-10 -left-10 w-48 h-48 text-white/5 rotate-12"></i>
+        </div>
+
+        <div id="history-container" class="space-y-4">
+            <!-- Data histori akan muncul di sini -->
+        </div>
+    </div>
+
+    <!-- Integrasi Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- KONFIGURASI FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyB5WNx8e3S93-r2b_CGGoUiVsGzQMi9eOI",
+            authDomain: "absensi-4d46b.firebaseapp.com",
+            projectId: "absensi-4d46b",
+            storageBucket: "absensi-4d46b.firebasestorage.app",
+            messagingSenderId: "438967262131",
+            appId: "1:438967262131:web:d7c3b620af70ae247449c6",
+            measurementId: "G-WQEN6P6H7E"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const HOURLY_RATE = 1115;
+
+        // Tampilkan/Sembunyikan UI Istirahat
+        window.toggleBreakUI = () => {
+            const container = document.getElementById('break-input-container');
+            const isChecked = document.getElementById('useBreak').checked;
+            if (isChecked) {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        };
+
+        // Inisialisasi Tampilan
+        document.getElementById('workDate').valueAsDate = new Date();
+        document.getElementById('filterMonth').value = new Date().toISOString().substring(0, 7);
+
+        // Pantau Status User
+        onAuthStateChanged(auth, (user) => {
+            document.getElementById('loading-overlay').classList.add('hidden');
+            if (user) {
+                window.currentUser = user;
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                document.getElementById('user-email-display').innerText = user.email;
+                loadData();
+            } else {
+                window.currentUser = null;
+                document.getElementById('main-app').classList.add('hidden');
+                document.getElementById('auth-screen').classList.remove('hidden');
+            }
+        });
+
+        // Autentikasi
+        window.handleAuth = async (type) => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            if (!email || pass.length < 6) return alert("Email valid & pass minimal 6 karakter!");
+            try {
+                if (type === 'login') await signInWithEmailAndPassword(auth, email, pass);
+                else await createUserWithEmailAndPassword(auth, email, pass);
+            } catch (e) { alert("Gagal: " + e.message); }
+        };
+
+        window.handleLogout = () => confirm("Keluar dari akun?") && signOut(auth);
+
+        // Olah Data Cloud
+        window.loadData = () => {
+            if (!window.currentUser) return;
+            const q = collection(db, 'users', window.currentUser.uid, 'absensi');
+            onSnapshot(q, (snapshot) => {
+                const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderUI(logs);
+            }, (err) => console.error("Firestore Error:", err));
+        };
+
+        function renderUI(logs) {
+            const month = document.getElementById('filterMonth').value;
+            const filtered = logs.filter(l => l.date.startsWith(month)).sort((a,b) => b.date.localeCompare(a.date));
+            let totalMin = 0, totalSal = 0;
+            const container = document.getElementById('history-container');
+            
+            container.innerHTML = filtered.length ? '' : '<p class="text-center py-10 text-slate-400 italic">Belum ada data di bulan ini</p>';
+            
+            filtered.forEach(log => {
+                totalMin += log.netMinutes;
+                totalSal += log.salary;
+                const d = new Date(log.date);
+                const hasBreak = log.breakDur > 0;
+                
+                container.innerHTML += `
+                    <div class="bg-white p-5 rounded-3xl flex justify-between items-center shadow-sm border border-slate-50">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-indigo-50 w-12 h-12 rounded-2xl flex flex-col items-center justify-center font-black text-indigo-600">
+                                <span class="text-[8px] uppercase tracking-tighter">${d.toLocaleDateString('id-ID', {month:'short'})}</span>
+                                <span class="text-lg leading-none">${d.getDate()}</span>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
+                                    <i data-lucide="clock" class="w-3 h-3 text-blue-400"></i> ${log.timeIn}-${log.timeOut}
+                                    ${hasBreak ? `<span class="mx-1">•</span> <i data-lucide="coffee" class="w-3 h-3 text-amber-400"></i> ${log.breakDur}m` : ''}
+                                </p>
+                                <p class="text-xl font-black text-slate-800 italic">¥${log.salary.toLocaleString('ja-JP')}</p>
+                            </div>
+                        </div>
+                        <button onclick="deleteEntry('${log.id}')" class="w-10 h-10 rounded-full flex items-center justify-center text-slate-200 hover:text-rose-500 hover:bg-rose-50 transition-all">
+                            <i data-lucide="trash-2"></i>
+                        </button>
+                    </div>
+                `;
+            });
+
+            document.getElementById('statDays').innerText = filtered.length;
+            document.getElementById('statHours').innerText = (totalMin / 60).toFixed(1);
+            document.getElementById('statSalary').innerText = `¥${totalSal.toLocaleString('ja-JP')}`;
+            lucide.createIcons();
+        }
+
+        window.saveToCloud = async () => {
+            const date = document.getElementById('workDate').value;
+            const tIn = document.getElementById('timeIn').value;
+            const tOut = document.getElementById('timeOut').value;
+            const useBreak = document.getElementById('useBreak').checked;
+            
+            const toM = (t) => { const [h, m] = t.split(':').map(Number); return (h * 60) + m; };
+            
+            let raw = toM(tOut) - toM(tIn); 
+            if (raw < 0) raw += 1440; // Lewat tengah malam
+            
+            let brk = 0;
+            if (useBreak) {
+                const bS = document.getElementById('breakStart').value;
+                const bE = document.getElementById('breakEnd').value;
+                brk = toM(bE) - toM(bS);
+                if (brk < 0) brk = 0;
+            }
+            
+            const net = raw - brk;
+            const salary = Math.floor((net / 60) * HOURLY_RATE);
+
+            try {
+                await setDoc(doc(db, 'users', window.currentUser.uid, 'absensi', date), {
+                    date, 
+                    timeIn: tIn, 
+                    timeOut: tOut, 
+                    breakDur: brk, 
+                    netMinutes: net, 
+                    salary,
+                    useBreak: useBreak
+                });
+                alert("Data berhasil tersimpan!");
+            } catch (e) { alert("Error: " + e.message); }
+        };
+
+        window.deleteEntry = async (id) => confirm("Hapus data tanggal ini?") && await deleteDoc(doc(db, 'users', window.currentUser.uid, 'absensi', id));
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>
