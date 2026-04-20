@@ -23,6 +23,10 @@
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #4f46e5; }
         input:checked + .slider:before { transform: translateX(20px); }
+
+        /* Style for Password Toggle */
+        .password-container { position: relative; }
+        .password-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #94a3b8; }
     </style>
 </head>
 <body class="pb-24">
@@ -50,7 +54,12 @@
             </div>
             <div>
                 <label class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-2 mb-1 block">Password</label>
-                <input type="password" id="password" placeholder="Min. 6 karakter">
+                <div class="password-container">
+                    <input type="password" id="password" placeholder="Min. 6 karakter">
+                    <div class="password-toggle" onclick="togglePasswordVisibility()">
+                        <i id="eye-icon" data-lucide="eye"></i>
+                    </div>
+                </div>
             </div>
             <div class="grid grid-cols-1 gap-3 pt-4">
                 <button onclick="handleAuth('login')" class="bg-slate-100 text-slate-700 font-bold py-4 rounded-2xl hover:bg-slate-200 transition-all">Masuk</button>
@@ -172,6 +181,21 @@
         const db = getFirestore(app);
         const HOURLY_RATE = 1115;
 
+        // Fungsi Tampilkan/Sembunyikan Password
+        window.togglePasswordVisibility = () => {
+            const passInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eye-icon');
+            
+            if (passInput.type === "password") {
+                passInput.type = "text";
+                eyeIcon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                passInput.type = "password";
+                eyeIcon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        };
+
         // Tampilkan/Sembunyikan UI Istirahat
         window.toggleBreakUI = () => {
             const container = document.getElementById('break-input-container');
@@ -186,7 +210,6 @@
         // Inisialisasi Tampilan
         document.getElementById('workDate').valueAsDate = new Date();
         document.getElementById('filterMonth').value = new Date().toISOString().substring(0, 7);
-        // Jalankan toggleBreakUI sekali untuk menyesuaikan tampilan awal
         window.toggleBreakUI();
 
         // Pantau Status User
@@ -279,7 +302,7 @@
             const toM = (t) => { const [h, m] = t.split(':').map(Number); return (h * 60) + m; };
             
             let raw = toM(tOut) - toM(tIn); 
-            if (raw < 0) raw += 1440; // Lewat tengah malam
+            if (raw < 0) raw += 1440; 
             
             let brk = 0;
             if (useBreak) {
@@ -294,13 +317,7 @@
 
             try {
                 await setDoc(doc(db, 'users', window.currentUser.uid, 'absensi', date), {
-                    date, 
-                    timeIn: tIn, 
-                    timeOut: tOut, 
-                    breakDur: brk, 
-                    netMinutes: net, 
-                    salary,
-                    useBreak: useBreak
+                    date, timeIn: tIn, timeOut: tOut, breakDur: brk, netMinutes: net, salary, useBreak: useBreak
                 });
                 alert("Data berhasil tersimpan!");
             } catch (e) { alert("Error: " + e.message); }
