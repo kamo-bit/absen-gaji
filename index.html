@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gaji Tracker Cloud - Final Version</title>
+    <title>Gaji Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -94,10 +94,10 @@
                 </div>
 
                 <!-- Toggle Istirahat -->
-                <div class="flex items-center justify-between px-2 py-1">
+                <div class="flex items-center justify-between px-2 py-1 bg-slate-50 rounded-2xl p-3 border border-slate-100">
                     <div class="flex items-center gap-2">
                         <i data-lucide="coffee" class="w-4 h-4 text-amber-500"></i>
-                        <span class="text-xs font-bold text-slate-600">Gunakan Waktu Istirahat?</span>
+                        <span class="text-xs font-bold text-slate-600 uppercase tracking-tight">Ada Istirahat?</span>
                     </div>
                     <label class="switch">
                         <input type="checkbox" id="useBreak" checked onchange="toggleBreakUI()">
@@ -186,6 +186,8 @@
         // Inisialisasi Tampilan
         document.getElementById('workDate').valueAsDate = new Date();
         document.getElementById('filterMonth').value = new Date().toISOString().substring(0, 7);
+        // Jalankan toggleBreakUI sekali untuk menyesuaikan tampilan awal
+        window.toggleBreakUI();
 
         // Pantau Status User
         onAuthStateChanged(auth, (user) => {
